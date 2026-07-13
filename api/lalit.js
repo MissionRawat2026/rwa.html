@@ -1,6 +1,6 @@
 // api/lalit.js
 export default async function handler(req, res) {
-    // CORS headers — सबको allow करो
+    // CORS headers — sabko allow karo
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Lalit bhai ki site se HTML fetch करो
+        // Lalit bhai ki site se HTML fetch karo
         const response = await fetch('https://spidyuniverserwa.vercel.app/', {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -44,75 +44,60 @@ export default async function handler(req, res) {
 function extractRealBatches(html) {
     const batches = [];
     
-    // 🔥 METHOD 1: Saare links dhundho jo batch/course/video se related ho
+    // 🔥 Saare <a> tags dhundho jo batch/course se related ho
     const linkRegex = /<a\s+[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi;
     const imgRegex = /<img\s+[^>]*src="([^"]*)"[^>]*>/gi;
     
-    // Saare links extract karo
     let match;
     const links = [];
     while ((match = linkRegex.exec(html)) !== null) {
         const href = match[1];
         const text = match[2].trim();
-        if (href && text && text.length > 2) {
+        if (href && text && text.length > 2 && href.startsWith('http')) {
             links.push({ href, text });
         }
     }
     
-    // Saare images extract karo
     const images = [];
     while ((match = imgRegex.exec(html)) !== null) {
         images.push(match[1]);
     }
     
     // 🔥 Links ko batches mein convert karo
-    let batchIndex = 0;
+    let idx = 0;
     links.forEach((link) => {
-        // Sirf wahi links jo batch/course/video/class se related ho
-        const isBatchRelated = 
+        const isBatch = 
             link.href.includes('batch') || 
             link.href.includes('course') || 
-            link.href.includes('video') || 
-            link.href.includes('class') ||
-            link.href.includes('lecture') ||
+            link.href.includes('video') ||
             link.text.toLowerCase().includes('batch') ||
-            link.text.toLowerCase().includes('course') ||
-            link.text.toLowerCase().includes('class') ||
-            link.text.toLowerCase().includes('free') ||
-            link.text.toLowerCase().includes('paid');
+            link.text.toLowerCase().includes('course');
         
-        // Aur sirf wahi links jo HTTP se start ho
-        if (isBatchRelated && link.href.startsWith('http')) {
-            batchIndex++;
-            // Thumbnail dhundho (agar available hai)
-            let thumbnail = 'https://i.postimg.cc/BQKSrcr2/logo.png';
-            if (images.length > 0) {
-                thumbnail = images[batchIndex % images.length] || thumbnail;
-            }
-            
-            // Category guess karo
+        if (isBatch) {
+            idx++;
             let category = 'Free Batch';
-            if (link.text.toLowerCase().includes('ssc')) category = 'SSC';
-            else if (link.text.toLowerCase().includes('police')) category = 'Police';
-            else if (link.text.toLowerCase().includes('teaching')) category = 'Teaching';
-            else if (link.text.toLowerCase().includes('bank')) category = 'Banking';
-            else if (link.text.toLowerCase().includes('railway')) category = 'Railway';
-            else if (link.text.toLowerCase().includes('defence')) category = 'Defence';
-            else if (link.text.toLowerCase().includes('ctet')) category = 'CTET';
-            else if (link.text.toLowerCase().includes('net')) category = 'UGC NET';
+            const t = link.text.toLowerCase();
+            if (t.includes('ssc')) category = 'SSC';
+            else if (t.includes('police')) category = 'UP Police';
+            else if (t.includes('teaching')) category = 'Teaching';
+            else if (t.includes('bank')) category = 'Banking';
+            else if (t.includes('railway')) category = 'Railway';
+            else if (t.includes('defence')) category = 'Defence';
+            else if (t.includes('ctet')) category = 'CTET';
+            else if (t.includes('net')) category = 'UGC NET';
             
             batches.push({
-                id: batchIndex,
-                title: link.text || `Batch ${batchIndex}`,
+                id: idx,
+                title: link.text || `Batch ${idx}`,
                 link: link.href,
-                thumbnail: thumbnail,
+                thumbnail: images[idx % images.length] || 'https://i.postimg.cc/BQKSrcr2/logo.png',
                 category: category,
-                lectures: Math.floor(Math.random() * 30) + 10
+                lectures: Math.floor(Math.random() * 30) + 5
             });
         }
     });
     
-    // 🔥 METHOD 2: Agar kuch nahi mila toh category-wise dummy batches generate karo
+    // Agar kuch nahi mila toh dummy generate karo
     if (batches.length === 0) {
         const categories = ['SSC', 'UP Police', 'Teaching', 'Banking', 'Railway', 'Defence', 'CTET', 'UGC NET'];
         for (let i = 1; i <= 577; i++) {
@@ -123,10 +108,10 @@ function extractRealBatches(html) {
                 link: '#',
                 thumbnail: 'https://i.postimg.cc/BQKSrcr2/logo.png',
                 category: cat,
-                lectures: Math.floor(Math.random() * 30) + 10
+                lectures: Math.floor(Math.random() * 30) + 5
             });
         }
     }
     
     return batches;
-}
+                }
