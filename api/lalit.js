@@ -1,16 +1,7 @@
 // api/lalit.js
 export default async function handler(req, res) {
-    // CORS headers — sabko allow karo
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
     try {
-        // Lalit bhai ki site se HTML fetch karo
+        // Lalit bhai ki site se data fetch karo
         const response = await fetch('https://spidyuniverserwa.vercel.app/', {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -23,9 +14,11 @@ export default async function handler(req, res) {
         
         const html = await response.text();
         
-        // 🔥 REAL BATCHES EXTRACT KARO
-        const batches = extractRealBatches(html);
+        // 🔥 HTML se batches extract karo
+        const batches = extractBatches(html);
         
+        // CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.status(200).json({
             success: true,
             total: batches.length,
@@ -33,7 +26,6 @@ export default async function handler(req, res) {
         });
         
     } catch (error) {
-        console.error('Proxy Error:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -41,10 +33,8 @@ export default async function handler(req, res) {
     }
 }
 
-function extractRealBatches(html) {
+function extractBatches(html) {
     const batches = [];
-    
-    // 🔥 Saare <a> tags dhundho jo batch/course se related ho
     const linkRegex = /<a\s+[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi;
     const imgRegex = /<img\s+[^>]*src="([^"]*)"[^>]*>/gi;
     
@@ -63,7 +53,6 @@ function extractRealBatches(html) {
         images.push(match[1]);
     }
     
-    // 🔥 Links ko batches mein convert karo
     let idx = 0;
     links.forEach((link) => {
         const isBatch = 
@@ -114,4 +103,4 @@ function extractRealBatches(html) {
     }
     
     return batches;
-                }
+                    }
