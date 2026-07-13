@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RWA Free Batches - Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0d1117;
+            color: #ffffff;
+            padding: 20px;
+        }
+        .batch-card {
+            background: #161b22;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #00e5ff;
+        }
+        .batch-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .batch-meta {
+            color: #8b949e;
+            font-size: 14px;
+        }
+        .free-tag {
+            color: #22c55e;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .error {
+            color: #f85149;
+            padding: 20px;
+            text-align: center;
+        }
+        #search {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: #ffffff;
+            font-size: 16px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid #30363d;
+            margin-bottom: 30px;
+        }
+        .badge {
+            background: #238636;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .count-badge {
+            background: #1f6feb;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .platform-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .platform-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #c9d1d9;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .platform-btn.active {
+            background: #238636;
+            border-color: #238636;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🚀 RWA Free Batches <span class="badge">TEST</span></h1>
+        <p>Powered by SPIDY UNIVERSE • <span id="batchCount">0</span> Batches Loaded</p>
+    </div>
+
+    <div style="max-width: 800px; margin: 0 auto;">
+        <input type="text" id="search" placeholder="🔍 Search your batch..." oninput="filterBatches()">
+        <div id="batchList"></div>
+    </div>
+
+    <script>
+        // ========================================
+        // LALIT BHAI (SPIDY UNIVERSE) SE DATA FETCH
+        // ========================================
+        const LALIT_SITE = 'https://spidyuniverserwa.vercel.app/';
+        let allBatches = [];
+
+        async function fetchLalitBatches() {
+            const list = document.getElementById('batchList');
+            list.innerHTML = '<div style="text-align:center; padding:50px;">⏳ Loading 577+ batches...</div>';
+
+            try {
+                // 1. HTML fetch karo
+                const response = await fetch(LALIT_SITE);
+                const html = await response.text();
+
+                // 2. HTML se data extract karo (temporary div banake)
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+
+                // 3. 🔥 YAHAN SE BATCHES NIKALO (Class names adjust karo)
+                // Pehle saare links dekho jo "batch" ya "course" se related ho
+                const allLinks = tempDiv.querySelectorAll('a[href*="batch"], a[href*="course"], a[href*="video"], a[href*="class"]');
+                const batchElements = tempDiv.querySelectorAll('.batch-card, .course-card, .item, .card, .product');
+
+                // 4. Data array banayein
+                const batches = [];
+
+                // Pehle .batch-card jaisi classes try karo
+                batchElements.forEach(el => {
+                    const titleEl = el.querySelector('h3, h4, .title, .name, .heading');
+                    const linkEl = el.querySelector('a');
+                    const imgEl = el.querySelector('img');
+
+                    const title = titleEl ? titleEl.innerText.trim() : (linkEl ? linkEl.innerText.trim() : 'Batch');
+                    const link = linkEl ? linkEl.href : '#';
+                    const img = imgEl ? imgEl.src : 'https://i.postimg.cc/BQKSrcr2/logo.png';
+
+                    if (title && title.length > 2) {
+                        batches.push({ title, link, img });
+                    }
+                });
+
+                // Agar kuch na mile toh saare links se try karo
+                if (batches.length === 0) {
+                    allLinks.forEach(link => {
+                        const title = link.innerText.trim() || link.href.split('/').pop() || 'Batch';
+                        if (title.length > 2 && link.href.startsWith('http')) {
+                            batches.push({
+                                title: title,
+                                link: link.href,
+                                img: 'https://i.postimg.cc/BQKSrcr2/logo.png'
+                            });
+                        }
+                    });
+                }
+
+                // Agar abhi bhi kuch nahi mila toh fake data test ke liye
+                if (batches.length === 0) {
+                    // Fallback: 10 sample batches
+                    for (let i = 1; i <= 10; i++) {
+                        batches.push({
+                            title: `Test Batch ${i}`,
+                            link: `#batch-${i}`,
+                            img: 'https://i.postimg.cc/BQKSrcr2/logo.png'
+                        });
+                    }
+                }
+
+                allBatches = batches;
+                document.getElementById('batchCount').innerText = batches.length;
+                renderBatches(batches);
+
+            } catch (error) {
+                console.error('Error:', error);
+                list.innerHTML = `
+                    <div class="error">
+                        ⚠️ Error loading batches: ${error.message}<br>
+                        <button onclick="fetchLalitBatches()" style="margin-top:20px; background:#238636; border:none; padding:10px 20px; color:#fff; border-radius:8px; cursor:pointer;">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderBatches(batches) {
+            const list = document.getElementById('batchList');
+            list.innerHTML = '';
+
+            if (!batches || batches.length === 0) {
+                list.innerHTML = '<div class="error">😕 No batches found.</div>';
+                return;
+            }
+
+            batches.forEach((batch, index) => {
+                const card = document.createElement('div');
+                card.className = 'batch-card';
+                card.style.display = 'flex';
+                card.style.alignItems = 'center';
+                card.style.gap = '15px';
+
+                card.innerHTML = `
+                    <img src="${batch.img}" style="width:50px; height:50px; border-radius:8px; object-fit:cover; background:#fff; padding:2px;" 
+                         onerror="this.src='https://i.postimg.cc/BQKSrcr2/logo.png'">
+                    <div style="flex:1;">
+                        <div class="batch-title">${batch.title}</div>
+                        <div class="batch-meta">
+                            Free Batch <span class="free-tag">🔓 FREE</span>
+                            <span class="count-badge">#${index + 1}</span>
+                        </div>
+                    </div>
+                    <a href="${batch.link}" target="_blank" style="color:#00e5ff; font-size:20px; text-decoration:none;">→</a>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function filterBatches() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const cards = document.querySelectorAll('#batchList .batch-card');
+
+            cards.forEach(card => {
+                const title = card.querySelector('.batch-title')?.innerText?.toLowerCase() || '';
+                card.style.display = title.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        // ========================================
+        // PAGE LOAD HOTE HI FETCH SHURU KARO
+        // ========================================
+        window.onload = function() {
+            fetchLalitBatches();
+            // Auto-refresh har 5 minute mein (test ke liye)
+            setInterval(fetchLalitBatches, 300000);
+        };
+    </script>
+</body>
+</html>
